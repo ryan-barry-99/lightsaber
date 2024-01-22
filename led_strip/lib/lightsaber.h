@@ -6,6 +6,8 @@
 
 #define NUM_LEDS 66
 #define LED_PIN 1
+#define SELECTOR_BUTTON_PIN 11
+#define IGNITION_PIN 2
 #define RED_DIAL A0
 #define GREEN_DIAL A1
 #define BLUE_DIAL A2
@@ -13,18 +15,27 @@
 class Lightsaber {
   public:
     Lightsaber();
+    void detectIgnition();
     void setLeds();
     void setLedColor(int led, CRGB color);
-    void rainbowSweep();
-    void rainbow();
     void mixColor();
+    void rainbowSweep();
+    void rainbowCycle();
+    void rainbowSlowSweep();
+    void rainbow();
     void america();
+    int buttonSelect();
+    int funcSelect;
   private:
     CRGB leds[NUM_LEDS];
     int numLeds;
     uint8_t dataPin;
     elapsedMillis tic;
-    int hue = 0;
+    int hue;
+    int mode_sel[2] = {LOW, HIGH};
+    int ignition[2] = {LOW, HIGH};
+    bool ignite_flag = false;
+    bool extinguish_flag = false;
 };
 
 #endif
