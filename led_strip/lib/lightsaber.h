@@ -4,7 +4,11 @@
 
 #include <FastLED.h>
 
-#define NUM_LEDS 66
+#define LENGTH 2 // 2M strip
+#define LENGTH_CM LENGTH * 100
+#define NUM_LEDS_PER_METER 30
+#define NUM_LEDS_PER_CM NUM_LEDS_PER_METER / 100
+#define NUM_LEDS LENGTH * NUM_LEDS_PER_METER
 #define LED_PIN 1
 #define SELECTOR_BUTTON_PIN 11
 #define IGNITION_PIN 2
@@ -24,7 +28,13 @@ class Lightsaber {
     void rainbowSlowSweep();
     void rainbow();
     void america();
+    void flickeringFlame();
+    void duelOfTheFates();
+    void duelOfTheFates2();
     int buttonSelect();
+    void ignite();
+    void extinguish();
+    void lightsaber_app();
     int funcSelect;
   private:
     CRGB leds[NUM_LEDS];
@@ -34,6 +44,7 @@ class Lightsaber {
     int hue;
     int mode_sel[2] = {LOW, HIGH};
     int ignition[2] = {LOW, HIGH};
+    bool lightsaber_on = false;
     bool ignite_flag = false;
     bool extinguish_flag = false;
 };

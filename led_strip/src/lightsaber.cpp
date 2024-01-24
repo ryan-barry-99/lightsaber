@@ -19,7 +19,7 @@ void Lightsaber::setLedColor(int led, CRGB color) {
 }
 
 void Lightsaber::rainbowSweep(){
-  if (tic >= 5) {
+  if (tic >= 10*NUM_LEDS_PER_CM) {
     /* Shift prior colors up all the LEDs */
     for (int i = 0; i < NUM_LEDS - 1; i++) {
       leds[i] = leds[i + 1];
@@ -36,7 +36,6 @@ void Lightsaber::rainbowSweep(){
 }
 
 void Lightsaber::rainbowCycle() {
-  static int hue = 0; // Declare hue as a static variable to retain its value across function calls
   CRGB color = CHSV(hue, 255, 255); // Create a color based on the current hue value
   fill_solid(leds, NUM_LEDS, color); // Set all LEDs to the same color
   FastLED.show();
@@ -107,12 +106,54 @@ void Lightsaber::america(){
   FastLED.show();
 }
 
+void Lightsaber::flickeringFlame() {
+  const int flickerDelay = 10; // Adjust the delay time for the flickering effect
+  const int flickerChance = 20; // Adjust the chance of flickering (higher values increase flickering)
+
+  for (int i = 0; i < NUM_LEDS; i++) {
+    if (random(0, flickerChance) == 0) {
+      // Flicker the LED with yellow color (255, 255, 0)
+      leds[i] = CRGB(0, 255, 255);
+    } else {
+      // Set the LED to red color (255, 0, 0)
+      leds[i] = CRGB(0, 0, 255);
+    }
+  }
+  FastLED.show();
+  delay(flickerDelay);
+}
+
+void Lightsaber::duelOfTheFates(){
+  for (int i = 0; i < NUM_LEDS; i++) {
+    if (i < NUM_LEDS/3) {
+      leds[i] = CRGB(0, 0, 255);
+    } else {
+      leds[i] = CRGB(255, 0, 0);
+    }
+  }
+  FastLED.show();
+  delay(1);
+}
+
+void Lightsaber::duelOfTheFates2(){
+  for (int i = 0; i < NUM_LEDS; i++) {
+    if (i < NUM_LEDS/3) {
+      leds[i] = CRGB(0, 0, 255);
+    } else {
+      leds[i] = CRGB(0, 255, 0);
+    }
+  }
+  FastLED.show();
+  delay(1);
+}
+
+
 int Lightsaber::buttonSelect(){
   mode_sel[0] = digitalRead(SELECTOR_BUTTON_PIN);
   if (mode_sel[0] != mode_sel[1]) {
     if (mode_sel[0] == HIGH) {
       funcSelect++;
-      if (funcSelect == 2) {
+      if (funcSelect == 6) {
         funcSelect = 0;
       }
     }
@@ -123,13 +164,97 @@ int Lightsaber::buttonSelect(){
 
 void Lightsaber::detectIgnition(){
   ignition[0] = digitalRead(IGNITION_PIN);
+  if (ignition[0] == HIGH) {
+    lightsaber_on = true;
+  }
+  else {
+    lightsaber_on = false;
+  }
+
   if (ignition[0] != ignition[1]) {
+    funcSelect = 0;
     if (ignition[0] == HIGH) {
-      funcSelect++;
-      if (funcSelect == 2) {
-        funcSelect = 0;
-      }
+      ignite_flag = true;
+      extinguish_flag = false;
+    }
+    else {
+      ignite_flag = false;
+      extinguish_flag = true;
     }
   }
   ignition[1] = ignition[0];
+  this->ignite();
+}
+
+
+void Lightsaber::ignite(){
+  if (ignite_flag == true) {
+    CRGB color = CRGB(0,0,0);
+    for (int i = 0; i < NUM_LEDS; i++) {
+      leds[i] = color;
+    }
+    FastLED.show();
+    int red = analogRead(RED_DIAL) / 4;
+    int green = analogRead(GREEN_DIAL) / 4;
+    int blue = analogRead(BLUE_DIAL) / 4;
+    if(red <= 5) red = 0;
+    if(green <= 5) green = 0;
+    if(blue <= 5) blue = 0;
+    color = CRGB(red, green, blue);
+    for (int i = 0; i < NUM_LEDS; i++) {
+      leds[i] = color;
+      delay(LENGTH_CM/30);
+      FastLED.show();
+    }
+    delay(1);
+    ignite_flag = false;
+  }
+}
+
+void Lightsaber::extinguish(){
+  CRGB color = CRGB(0,0,0);
+  if (extinguish_flag == true){
+    for (int i = NUM_LEDS - 1; i >= 0; i--) {
+      leds[i] = color;
+      delay(LENGTH_CM/30);
+      FastLED.show();
+    }
+    extinguish_flag = false;
+  }
+  else{
+    for (int i = 0; i < NUM_LEDS; i++) {
+      leds[i] = color;
+    }
+      FastLED.show();
+  }
+  delay(1);
+}
+
+void Lightsaber::lightsaber_app(){
+  this->detectIgnition();
+  if (lightsaber_on == true) {
+    switch(this->buttonSelect()){
+      case 0:
+      this->mixColor();
+      break;
+      case 1:
+      this->rainbowSweep();
+      break;
+      case 2:
+      this->flickeringFlame();
+      break;
+      case 3:
+      this->america();
+      break;
+      case 4:
+      this->duelOfTheFates();
+      break;
+      case 5:
+      this->duelOfTheFates2();
+      break;
+    }
+  }
+  else{
+    this->extinguish();
+  }
 }

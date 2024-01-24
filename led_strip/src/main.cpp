@@ -16,29 +16,6 @@ void setup() {
 
 void loop() {
   // Use the lightsaber methods to control the LED strip
-  
-  switch(lightsaber.buttonSelect()){
-    case 0:
-    lightsaber.mixColor();
-    break;
-    case 1:
-    lightsaber.rainbowSweep();
-    break;
-    case 2:
-    lightsaber.rainbowSlowSweep();
-    break;
-    case 3:
-    lightsaber.rainbowCycle();
-    break;
-    case 4:
-    lightsaber.america();
-    break;
-  }
-  // lightsaber.rainbowSweep();
-  // lightsaber.rainbowSlowSweep();
-  // lightsaber.rainbow();
-  // lightsaber.setLedColor(6, CRGB(255, 255, 0));
-  // lightsaber.mixColor();
-  // lightsaber.america();
+  lightsaber.lightsaber_app();
 }
 
