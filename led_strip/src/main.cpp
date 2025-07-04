@@ -2,7 +2,7 @@
 #include <FastLED.h>
 
 // main.cpp
-#include "../lib/lightsaber.h"
+#include "../include/lightsaber.h"
 
 
 // Instantiate the Lightsaber

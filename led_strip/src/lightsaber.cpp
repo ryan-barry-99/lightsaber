@@ -1,5 +1,5 @@
 // Lightsaber.cpp
-#include "../lib/lightsaber.h"
+#include "../include/lightsaber.h"
 
 
 Lightsaber::Lightsaber(){}
@@ -58,7 +58,7 @@ void Lightsaber::rainbowSlowSweep() {
       leds[i] = CHSV(colorHue, colorSaturation, colorValue); // Set the LED color based on the hue, saturation, and value
     }
     FastLED.show();
-    delay(50); // Adjust delay time to control speed of color change
+    delay(25); // Adjust delay time to control speed of color change
     currentIndex++;
   }
   hue += increment; // Increment the hue value to move to the next color
@@ -96,19 +96,20 @@ void Lightsaber::mixColor() {
 void Lightsaber::america(){
   for (int i = 0; i < NUM_LEDS; i++) {
     if (i % 3 == 0) {
-      leds[i] = CRGB::Red;
+      leds[i] = CRGB(0, 0, 255);
     } else if (i % 3 == 1) {
-      leds[i] = CRGB::White;
+      leds[i] = CRGB(255, 255, 255);
     } else {
-      leds[i] = CRGB::Blue;
+      leds[i] = CRGB(255, 0, 0);
     }
   }
   FastLED.show();
+  delay(1);
 }
 
 void Lightsaber::flickeringFlame() {
   const int flickerDelay = 10; // Adjust the delay time for the flickering effect
-  const int flickerChance = 20; // Adjust the chance of flickering (higher values increase flickering)
+  const int flickerChance = 40; // Adjust the chance of flickering (higher values increase flickering)
 
   for (int i = 0; i < NUM_LEDS; i++) {
     if (random(0, flickerChance) == 0) {
@@ -203,7 +204,7 @@ void Lightsaber::ignite(){
     color = CRGB(red, green, blue);
     for (int i = 0; i < NUM_LEDS; i++) {
       leds[i] = color;
-      delay(LENGTH_CM/30);
+      delay(150.0/NUM_LEDS_PER_METER);
       FastLED.show();
     }
     delay(1);
@@ -216,7 +217,7 @@ void Lightsaber::extinguish(){
   if (extinguish_flag == true){
     for (int i = NUM_LEDS - 1; i >= 0; i--) {
       leds[i] = color;
-      delay(LENGTH_CM/30);
+      delay(150.0/NUM_LEDS_PER_METER);
       FastLED.show();
     }
     extinguish_flag = false;

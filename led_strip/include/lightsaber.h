@@ -4,9 +4,9 @@
 
 #include <FastLED.h>
 
-#define LENGTH 2 // 2M strip
+#define LENGTH 1 // 1M strip
 #define LENGTH_CM LENGTH * 100
-#define NUM_LEDS_PER_METER 30
+#define NUM_LEDS_PER_METER 144
 #define NUM_LEDS_PER_CM NUM_LEDS_PER_METER / 100
 #define NUM_LEDS LENGTH * NUM_LEDS_PER_METER
 #define LED_PIN 1
@@ -24,6 +24,7 @@ class Lightsaber {
     void setLedColor(int led, CRGB color);
     void mixColor();
     void rainbowSweep();
+    int rgb2hue(const CRGB& color);
     void rainbowCycle();
     void rainbowSlowSweep();
     void rainbow();
