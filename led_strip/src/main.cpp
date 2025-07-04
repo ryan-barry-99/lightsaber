@@ -2,14 +2,14 @@
 #include <FastLED.h>
 
 // main.cpp
-#include "../include/lightsaber.h"
+#include "lightsaber.h"
 
 
 // Instantiate the Lightsaber
 Lightsaber lightsaber;
 
 void setup() {
-  pinMode(2, INPUT_PULLDOWN);
+  pinMode(2, INPUT);
   // Initialize serial and any other setup code
   lightsaber.setLeds();
 }

@@ -8,8 +8,10 @@
 #define LENGTH_CM LENGTH * 100
 #define NUM_LEDS_PER_METER 144
 #define NUM_LEDS_PER_CM NUM_LEDS_PER_METER / 100
-#define NUM_LEDS LENGTH * NUM_LEDS_PER_METER
-#define LED_PIN 1
+// In lightsaber.h
+static const uint16_t NUM_LEDS = LENGTH * NUM_LEDS_PER_METER;
+
+#define LED_PIN 4
 #define SELECTOR_BUTTON_PIN 11
 #define IGNITION_PIN 2
 #define RED_DIAL A0
@@ -41,7 +43,7 @@ class Lightsaber {
     CRGB leds[NUM_LEDS];
     int numLeds;
     uint8_t dataPin;
-    elapsedMillis tic;
+    unsigned long tic;
     int hue;
     int mode_sel[2] = {LOW, HIGH};
     int ignition[2] = {LOW, HIGH};

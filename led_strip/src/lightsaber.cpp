@@ -1,8 +1,8 @@
 // Lightsaber.cpp
-#include "../include/lightsaber.h"
+#include "lightsaber.h"
 
 
-Lightsaber::Lightsaber(){}
+Lightsaber::Lightsaber() : tic(0){}
 
 void Lightsaber::setLeds(){
   funcSelect = 0;
@@ -19,7 +19,11 @@ void Lightsaber::setLedColor(int led, CRGB color) {
 }
 
 void Lightsaber::rainbowSweep(){
-  if (tic >= 10*NUM_LEDS_PER_CM) {
+  if (millis() - this->tic >= 1000) {
+        this->tic = millis();
+        // do stuff
+    }
+  if (this->tic >= 10*NUM_LEDS_PER_CM) {
     /* Shift prior colors up all the LEDs */
     for (int i = 0; i < NUM_LEDS - 1; i++) {
       leds[i] = leds[i + 1];
@@ -93,19 +97,39 @@ void Lightsaber::mixColor() {
   delay(1);
 }
 
-void Lightsaber::america(){
+void Lightsaber::america() {
+  static uint8_t offset = 0;
+
+  const CRGB red   = CRGB(0, 0, 255);   // GBR
+  const CRGB white = CRGB(255, 255, 255);
+  const CRGB blue  = CRGB(255, 0, 0);
+  const int flickerChance = 40;
+
+  const int blueWidth = NUM_LEDS / 2 - 19;
+  const int stripeWidth = 7;  // each red or white stripe is 10 LEDs wide
+
   for (int i = 0; i < NUM_LEDS; i++) {
-    if (i % 3 == 0) {
-      leds[i] = CRGB(0, 0, 255);
-    } else if (i % 3 == 1) {
-      leds[i] = CRGB(255, 255, 255);
+    int pos = (i + offset) % NUM_LEDS;
+
+    if (pos < blueWidth) {
+      // Blue section with twinkling white stars
+      leds[i] = (random(0, flickerChance) == 0) ? white : blue;
     } else {
-      leds[i] = CRGB(255, 0, 0);
+      // Alternating red and white stripes
+      int stripeIndex = (pos - blueWidth) / stripeWidth;
+      leds[i] = (stripeIndex % 2 == 0) ? red : white;
     }
   }
+
   FastLED.show();
-  delay(1);
+  delay(10);  // control speed of animation
+  offset = (offset + 1) % NUM_LEDS;
 }
+
+
+
+
+
 
 void Lightsaber::flickeringFlame() {
   const int flickerDelay = 10; // Adjust the delay time for the flickering effect
@@ -124,29 +148,52 @@ void Lightsaber::flickeringFlame() {
   delay(flickerDelay);
 }
 
-void Lightsaber::duelOfTheFates(){
+void Lightsaber::duelOfTheFates() {
+  const int gradientStart = NUM_LEDS/3;
+  const int gradientEnd   = NUM_LEDS / 3 + 10;
+
   for (int i = 0; i < NUM_LEDS; i++) {
-    if (i < NUM_LEDS/3) {
-      leds[i] = CRGB(0, 0, 255);
-    } else {
-      leds[i] = CRGB(255, 0, 0);
+    if (i < gradientStart) {
+      leds[i] = CRGB(0, 0, 255); // blue
+    }
+    else if (i > gradientEnd) {
+      leds[i] = CRGB(255, 0, 0); // red
+    }
+    else {
+      // Blend based on position within gradient range
+      uint8_t blendAmount = map(i, gradientStart, gradientEnd, 0, 255);
+      leds[i] = blend(CRGB(0, 0, 255), CRGB(255, 0, 0), blendAmount); // blue to red
     }
   }
+
   FastLED.show();
-  delay(1);
 }
 
-void Lightsaber::duelOfTheFates2(){
+void Lightsaber::duelOfTheFates2() {
+  const int gradientStart = NUM_LEDS / 3;
+  const int gradientEnd   = NUM_LEDS / 3 + 10;
+
   for (int i = 0; i < NUM_LEDS; i++) {
-    if (i < NUM_LEDS/3) {
-      leds[i] = CRGB(0, 0, 255);
-    } else {
-      leds[i] = CRGB(0, 255, 0);
+    if (i < gradientStart) {
+      leds[i] = CRGB(0, 0, 255); // green (GBR)
+    }
+    else if (i > gradientEnd) {
+      leds[i] = CRGB(0, 255, 0); // red (GBR)
+    }
+    else {
+      uint8_t blendAmount = map(i, gradientStart, gradientEnd, 0, 255);
+      leds[i] = blend(CRGB(0, 0, 255), CRGB(0, 255, 0), blendAmount); // green → red (GBR)
     }
   }
+
   FastLED.show();
-  delay(1);
 }
+
+
+
+
+
+
 
 
 int Lightsaber::buttonSelect(){
@@ -184,7 +231,7 @@ void Lightsaber::detectIgnition(){
     }
   }
   ignition[1] = ignition[0];
-  this->ignite();
+  // this->ignite();
 }
 
 
@@ -235,27 +282,15 @@ void Lightsaber::lightsaber_app(){
   this->detectIgnition();
   if (lightsaber_on == true) {
     switch(this->buttonSelect()){
-      case 0:
-      this->mixColor();
-      break;
-      case 1:
-      this->rainbowSweep();
-      break;
-      case 2:
-      this->flickeringFlame();
-      break;
-      case 3:
-      this->america();
-      break;
-      case 4:
-      this->duelOfTheFates();
-      break;
-      case 5:
-      this->duelOfTheFates2();
-      break;
+      case 0: this->mixColor(); break;
+      case 1: this->rainbowSweep(); break;
+      case 2: this->flickeringFlame(); break;
+      case 3: this->america(); break;
+      case 4: this->duelOfTheFates(); break; 
+      case 5: this->duelOfTheFates2(); break;
     }
   }
   else{
-    this->extinguish();
+    // this->extinguish();
   }
 }
