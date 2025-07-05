@@ -25,7 +25,7 @@ void Lightsaber::rainbowSweep(){
     }
   if (this->tic >= 10*NUM_LEDS_PER_CM) {
     /* Shift prior colors up all the LEDs */
-    for (int i = 0; i < NUM_LEDS - 1; i++) {
+    for (int16_t i = 0; i < NUM_LEDS - 1; i++) {
       leds[i] = leds[i + 1];
     }
     /* Set the last LED with a rainbow color */
@@ -52,10 +52,10 @@ void Lightsaber::rainbowCycle() {
 
 void Lightsaber::rainbowSlowSweep() {
   static int hue = 0; // Declare hue as a static variable to retain its value across function calls
-  int increment = 256 / NUM_LEDS; // Calculate the increment value for each LED
-  int currentIndex = 0; // Track the current index of the LED strip
+  int16_t increment = 256 / NUM_LEDS; // Calculate the increment value for each LED
+  uint16_t currentIndex = 0; // Track the current index of the LED strip
   while (currentIndex < NUM_LEDS) {
-    for (int i = 0; i < NUM_LEDS; i++) {
+    for (int16_t i = 0; i < NUM_LEDS; i++) {
       int colorHue = hue + (i * increment); // Calculate the hue for each LED
       int colorSaturation = 255; // Set the saturation value for each LED
       int colorValue = 255; // Set the value (brightness) for each LED
@@ -73,9 +73,9 @@ void Lightsaber::rainbowSlowSweep() {
 
 void Lightsaber::rainbow(){
   int temp_hue = 0;
-  int increment = 256 / NUM_LEDS;
+  int16_t increment = 256 / NUM_LEDS;
   
-  for (int i = 0; i < NUM_LEDS; i++) {
+  for (int16_t i = 0; i < NUM_LEDS; i++) {
     leds[i] = CHSV(temp_hue, 255, 255);
     temp_hue += increment;
   }
@@ -90,7 +90,7 @@ void Lightsaber::mixColor() {
   if(green <= 5) green = 0;
   if(blue <= 5) blue = 0;
   CRGB color = CRGB(red, green, blue);
-  for (int i = 0; i < NUM_LEDS; i++) {
+  for (int16_t i = 0; i < NUM_LEDS; i++) {
     leds[i] = color;
   }
   FastLED.show();
@@ -103,12 +103,12 @@ void Lightsaber::america() {
   const CRGB red   = CRGB(0, 0, 255);   // GBR
   const CRGB white = CRGB(255, 255, 255);
   const CRGB blue  = CRGB(255, 0, 0);
-  const int flickerChance = 40;
+  const int flickerChance = 30;
 
   const int blueWidth = NUM_LEDS / 2 - 19;
   const int stripeWidth = 7;  // each red or white stripe is 10 LEDs wide
 
-  for (int i = 0; i < NUM_LEDS; i++) {
+  for (int16_t i = 0; i < NUM_LEDS; i++) {
     int pos = (i + offset) % NUM_LEDS;
 
     if (pos < blueWidth) {
@@ -122,12 +122,60 @@ void Lightsaber::america() {
   }
 
   FastLED.show();
-  delay(10);  // control speed of animation
+  delay(15);  // control speed of animation
   offset = (offset + 1) % NUM_LEDS;
 }
 
+void Lightsaber::lavaFlow() {
+  static uint16_t noiseOffset = 0;
+  static uint32_t lastBurst = 0;
 
+  const CRGB deepRed   = CRGB(0, 0, 255);
+  const CRGB hotRed    = CRGB(0, 30, 255);
+  const CRGB orange    = CRGB(0, 80, 200);
+  const CRGB yellow    = CRGB(0, 140, 255);
+  const CRGB whiteHot  = CRGB(15, 150, 255);
+  const CRGB cooled    = CRGB(0, 0, 20);   // Very dim red (almost black)
 
+  for (uint16_t i = 0; i < NUM_LEDS; i++) {
+    uint8_t baseHeat = inoise8(i * 10, noiseOffset);
+    uint8_t flicker = baseHeat + random8(30); // more chaotic
+
+    CRGB color;
+
+    if (flicker < 60) {
+      // Cooling lava crust
+      color = cooled;
+    }
+    else if (flicker < 100) {
+      color = blend(deepRed, hotRed, (flicker - 60) * 6); // scale up for full 0–255
+    }
+    else if (flicker < 160) {
+      color = blend(hotRed, orange, (flicker - 100) * 4);
+    }
+    else if (flicker < 210) {
+      color = blend(orange, yellow, (flicker - 160) * 5);
+    }
+    else {
+      color = whiteHot; // rare burst of extreme heat
+    }
+
+    leds[i] = color;
+  }
+
+  // Optional: small bursts of intense brightness
+  if (millis() - lastBurst > 1600 && random8() < 30) {
+    uint16_t burstCenter = random16(NUM_LEDS - 3);
+    for (uint8_t j = 0; j < 3; j++) {
+      leds[burstCenter + j] = whiteHot;
+    }
+    lastBurst = millis();
+  }
+
+  FastLED.show();
+  noiseOffset += 1;
+  delay(20);
+}
 
 
 
@@ -135,7 +183,7 @@ void Lightsaber::flickeringFlame() {
   const int flickerDelay = 10; // Adjust the delay time for the flickering effect
   const int flickerChance = 40; // Adjust the chance of flickering (higher values increase flickering)
 
-  for (int i = 0; i < NUM_LEDS; i++) {
+  for (int16_t i = 0; i < NUM_LEDS; i++) {
     if (random(0, flickerChance) == 0) {
       // Flicker the LED with yellow color (255, 255, 0)
       leds[i] = CRGB(0, 255, 255);
@@ -152,7 +200,7 @@ void Lightsaber::duelOfTheFates() {
   const int gradientStart = NUM_LEDS/3;
   const int gradientEnd   = NUM_LEDS / 3 + 10;
 
-  for (int i = 0; i < NUM_LEDS; i++) {
+  for (int16_t i = 0; i < NUM_LEDS; i++) {
     if (i < gradientStart) {
       leds[i] = CRGB(0, 0, 255); // blue
     }
@@ -173,7 +221,7 @@ void Lightsaber::duelOfTheFates2() {
   const int gradientStart = NUM_LEDS / 3;
   const int gradientEnd   = NUM_LEDS / 3 + 10;
 
-  for (int i = 0; i < NUM_LEDS; i++) {
+  for (int16_t i = 0; i < NUM_LEDS; i++) {
     if (i < gradientStart) {
       leds[i] = CRGB(0, 0, 255); // green (GBR)
     }
@@ -191,54 +239,119 @@ void Lightsaber::duelOfTheFates2() {
 
 
 
+void Lightsaber::deadSaber() {
+  static uint32_t lastUpdate = 0;
+  static const uint8_t baseDimMin = 3;   // Almost off
+  static const uint8_t baseDimMax = 10;   // Very dim red
+  static const uint8_t flickerChance = 5;  // Low chance of flicker
+  static const uint8_t flareChance = 1;     // Very rare flare
+  static uint8_t cooldown[NUM_LEDS];
+
+  uint32_t now = millis();
+  if (now - lastUpdate < 40) return;  // ~25 FPS update rate
+  lastUpdate = now;
+
+  for (uint16_t i = 0; i < NUM_LEDS; i++) {
+    if (cooldown[i] > 0) cooldown[i]--;
+
+    uint8_t roll = random8(100);
+    if (roll < flareChance && cooldown[i] == 0) {
+      // Very rare flare
+      leds[i] = CRGB(0, 0, 255); // full red (GBR)
+      cooldown[i] = 10;
+    } else if (roll < flickerChance && cooldown[i] == 0) {
+      // Mid brightness flicker
+      leds[i] = CRGB(0, 0, random8(30, 80));
+      cooldown[i] = 6;
+    } else if (cooldown[i] == 0) {
+      // Mostly dim and uneven
+      leds[i] = CRGB(0, 0, random8(baseDimMin, baseDimMax));
+    }
+  }
+
+  FastLED.show();
+}
 
 
 
 
 
-int Lightsaber::buttonSelect(){
-  mode_sel[0] = digitalRead(SELECTOR_BUTTON_PIN);
-  if (mode_sel[0] != mode_sel[1]) {
-    if (mode_sel[0] == HIGH) {
-      funcSelect++;
-      if (funcSelect == 6) {
-        funcSelect = 0;
+
+
+
+int Lightsaber::buttonSelect() {
+  static unsigned long lastDebounceTime = 0;
+  const unsigned long debounceDelay = 15;  // in milliseconds
+
+  int reading = digitalRead(SELECTOR_BUTTON_PIN);
+
+  if (reading != mode_sel[1]) {
+    // reset the debounce timer
+    lastDebounceTime = millis();
+  }
+
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    if (reading != mode_sel[0]) {
+      mode_sel[0] = reading;
+      if (mode_sel[0] == HIGH) {
+        funcSelect++;
+        if (funcSelect == 8) {
+          funcSelect = 0;
+        }
       }
     }
   }
-  mode_sel[1] = mode_sel[0];
+
+  mode_sel[1] = reading;
   return funcSelect;
 }
 
-void Lightsaber::detectIgnition(){
-  ignition[0] = digitalRead(IGNITION_PIN);
-  if (ignition[0] == HIGH) {
-    lightsaber_on = true;
-  }
-  else {
-    lightsaber_on = false;
+
+void Lightsaber::detectIgnition() {
+  static unsigned long lastDebounceTime = 0;
+  const unsigned long debounceDelay = 40;  // ms
+
+  int currentReading = digitalRead(IGNITION_PIN);
+
+  if (currentReading != ignition[1]) {
+    // Reset debounce timer if there's a change
+    lastDebounceTime = millis();
   }
 
-  if (ignition[0] != ignition[1]) {
-    funcSelect = 0;
-    if (ignition[0] == HIGH) {
-      ignite_flag = true;
-      extinguish_flag = false;
-    }
-    else {
-      ignite_flag = false;
-      extinguish_flag = true;
+  // Only consider it a stable change if it's lasted debounceDelay
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    if (currentReading != ignition[0]) {
+      ignition[0] = currentReading;
+
+      if (ignition[0] == HIGH && lightsaber_state == LIGHTSABER_OFF) {
+        lightsaber_state = LIGHTSABER_IGNITE;
+      } else if (ignition[0] == LOW && lightsaber_state == LIGHTSABER_ON) {
+        lightsaber_state = LIGHTSABER_EXTINGUISH;
+      }
     }
   }
-  ignition[1] = ignition[0];
-  // this->ignite();
+
+  ignition[1] = currentReading;
+
+  // Handle state transitions
+  if (lightsaber_state == LIGHTSABER_IGNITE) {
+    this->ignite();
+    return;
+  } else if (lightsaber_state == LIGHTSABER_EXTINGUISH) {
+    this->extinguish();
+    return;
+  }
 }
 
 
+
+
+
+
 void Lightsaber::ignite(){
-  if (ignite_flag == true) {
+  // if (ignite_flag == true) {
     CRGB color = CRGB(0,0,0);
-    for (int i = 0; i < NUM_LEDS; i++) {
+    for (int16_t i = 0; i < NUM_LEDS; i++) {
       leds[i] = color;
     }
     FastLED.show();
@@ -249,48 +362,57 @@ void Lightsaber::ignite(){
     if(green <= 5) green = 0;
     if(blue <= 5) blue = 0;
     color = CRGB(red, green, blue);
-    for (int i = 0; i < NUM_LEDS; i++) {
+    for (int16_t i = 0; i < NUM_LEDS; i++) {
       leds[i] = color;
-      delay(150.0/NUM_LEDS_PER_METER);
+      delay(0.01);
       FastLED.show();
     }
-    delay(1);
-    ignite_flag = false;
-  }
+    // delay(1);
+    lightsaber_state = LIGHTSABER_ON;
+
+    // ignite_flag = false;
+    // lightsaber_on = true;
+    // extinguish_flag = true;
+  // }    
+
 }
 
 void Lightsaber::extinguish(){
   CRGB color = CRGB(0,0,0);
-  if (extinguish_flag == true){
-    for (int i = NUM_LEDS - 1; i >= 0; i--) {
+  // if (extinguish_flag == true){
+    for (int16_t i = NUM_LEDS - 1; i >= 0; i--) {
       leds[i] = color;
-      delay(150.0/NUM_LEDS_PER_METER);
+      delay(0.01);
       FastLED.show();
     }
-    extinguish_flag = false;
-  }
-  else{
-    for (int i = 0; i < NUM_LEDS; i++) {
-      leds[i] = color;
-    }
-      FastLED.show();
-  }
-  delay(1);
+  lightsaber_state = LIGHTSABER_OFF;
+  funcSelect = 0;
 }
 
-void Lightsaber::lightsaber_app(){
+void Lightsaber::lightsaber_app() {
   this->detectIgnition();
-  if (lightsaber_on == true) {
-    switch(this->buttonSelect()){
+
+  // if (ignite_flag) {
+  //   this->ignite();
+  //   return;
+  // }
+
+  // if (extinguish_flag) {
+  //   this->extinguish();
+  //   return;
+  // }
+
+  if (lightsaber_state == LIGHTSABER_ON) {
+    switch (this->buttonSelect()) {
       case 0: this->mixColor(); break;
       case 1: this->rainbowSweep(); break;
       case 2: this->flickeringFlame(); break;
-      case 3: this->america(); break;
-      case 4: this->duelOfTheFates(); break; 
-      case 5: this->duelOfTheFates2(); break;
+      case 3: this->lavaFlow(); break;
+      case 4: this->america(); break;
+      case 5: this->duelOfTheFates(); break;
+      case 6: this->duelOfTheFates2(); break;
+      case 7: this->deadSaber(); break;
     }
   }
-  else{
-    // this->extinguish();
-  }
 }
+

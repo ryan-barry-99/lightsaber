@@ -9,9 +9,12 @@
 Lightsaber lightsaber;
 
 void setup() {
-  pinMode(2, INPUT);
+  // Serial.begin(115200);
+  pinMode(SELECTOR_BUTTON_PIN, INPUT);
   // Initialize serial and any other setup code
   lightsaber.setLeds();
+//   FastLED.clear();       // Set all LEDs to black in memory
+//   FastLED.show();        // Push that to the strip (turn them off physically)
 }
 
 void loop() {
