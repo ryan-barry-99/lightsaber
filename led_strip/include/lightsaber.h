@@ -41,6 +41,8 @@ class Lightsaber {
     void duelOfTheFates2();
     void lavaFlow();
     void deadSaber();
+    void nebulaBlade();
+    void nebulaDrift();
     int buttonSelect();
     void ignite();
     void extinguish();

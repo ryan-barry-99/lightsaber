@@ -86,9 +86,9 @@ void Lightsaber::mixColor() {
   int red = analogRead(RED_DIAL) / 4;
   int green = analogRead(GREEN_DIAL) / 4;
   int blue = analogRead(BLUE_DIAL) / 4;
-  if(red <= 5) red = 0;
-  if(green <= 5) green = 0;
-  if(blue <= 5) blue = 0;
+  if(red <= 10) red = 0;
+  if(green <= 10) green = 0;
+  if(blue <= 10) blue = 0;
   CRGB color = CRGB(red, green, blue);
   for (int16_t i = 0; i < NUM_LEDS; i++) {
     leds[i] = color;
@@ -238,33 +238,96 @@ void Lightsaber::duelOfTheFates2() {
 }
 
 
-
 void Lightsaber::deadSaber() {
   static uint32_t lastUpdate = 0;
-  static const uint8_t baseDimMin = 3;   // Almost off
-  static const uint8_t baseDimMax = 10;   // Very dim red
-  static const uint8_t flickerChance = 5;  // Low chance of flicker
-  static const uint8_t flareChance = 1;     // Very rare flare
-  static uint8_t cooldown[NUM_LEDS];
+  static uint32_t burstStartTime = 0;
+  static uint8_t burstState = 0;  // 0 = idle, 1 = blinking, 2 = solid, 3 = dying flicker, 4 = cooldown
+  static uint8_t blinkCount = 0;
+  static uint8_t targetBlinks = 0;
+  static uint32_t solidDuration = 0;
+  static const uint16_t updateDelay = 40;
 
+  static const uint8_t baseDimMin = 3;
+  static const uint8_t baseDimMax = 10;
+  static const uint8_t flickerChance = 5;
+  static const uint8_t flareChance = 1;
+  static const uint8_t burstChance = 2; // More frequent than before
+  static const uint16_t blinkDuration = 100;
+  static const uint16_t burstCooldownMin = 4000;
+  static const uint16_t burstCooldownMax = 10000;
+  static uint32_t nextBurstDelay = 6000;
+
+  static uint8_t cooldown[NUM_LEDS];
   uint32_t now = millis();
-  if (now - lastUpdate < 40) return;  // ~25 FPS update rate
+
+  if (now - lastUpdate < updateDelay) return;
   lastUpdate = now;
 
+  // Handle the burst sequence
+  switch (burstState) {
+    case 1: { // Blinking
+      bool onPhase = ((now - burstStartTime) / blinkDuration) % 2 == 0;
+      fill_solid(leds, NUM_LEDS, onPhase ? CRGB(0, 0, 255) : CRGB::Black);
+      FastLED.show();
+
+      if ((now - burstStartTime) > blinkDuration * 2 * targetBlinks) {
+        burstState = 2;
+        burstStartTime = now;
+        solidDuration = random(250, 2500);  // 0.5s to 2.5s
+      }
+      return;
+    }
+    case 2: { // Solid red
+      fill_solid(leds, NUM_LEDS, CRGB(0, 0, 255));
+      FastLED.show();
+
+      if ((now - burstStartTime) > solidDuration) {
+        burstState = 3; // Move to dying flicker
+        burstStartTime = now;
+        blinkCount = 0;
+      }
+      return;
+    }
+    case 3: { // Dying flicker (quick 2–3 flickers as it shuts off)
+      bool on = ((now - burstStartTime) / blinkDuration) % 2 == 0;
+      fill_solid(leds, NUM_LEDS, on ? CRGB(0, 0, 255) : CRGB::Black);
+      FastLED.show();
+
+      if ((now - burstStartTime) > blinkDuration * 2 * 2) {
+        burstState = 4;
+        burstStartTime = now;
+        nextBurstDelay = random(burstCooldownMin, burstCooldownMax);
+      }
+      return;
+    }
+    case 4: { // Cooldown
+      if (now - burstStartTime > nextBurstDelay) {
+        burstState = 0;
+      }
+      break;
+    }
+  }
+
+  // Start a new burst randomly
+  if (burstState == 0 && random(1000) < burstChance) {
+    burstState = 1;
+    burstStartTime = now;
+    targetBlinks = random(0, 6);  // 2 to 5 blinks
+    return;
+  }
+
+  // Normal flickering
   for (uint16_t i = 0; i < NUM_LEDS; i++) {
     if (cooldown[i] > 0) cooldown[i]--;
 
     uint8_t roll = random8(100);
     if (roll < flareChance && cooldown[i] == 0) {
-      // Very rare flare
-      leds[i] = CRGB(0, 0, 255); // full red (GBR)
+      leds[i] = CRGB(0, 0, 255); // red flare
       cooldown[i] = 10;
     } else if (roll < flickerChance && cooldown[i] == 0) {
-      // Mid brightness flicker
       leds[i] = CRGB(0, 0, random8(30, 80));
       cooldown[i] = 6;
     } else if (cooldown[i] == 0) {
-      // Mostly dim and uneven
       leds[i] = CRGB(0, 0, random8(baseDimMin, baseDimMax));
     }
   }
@@ -274,7 +337,86 @@ void Lightsaber::deadSaber() {
 
 
 
+void Lightsaber::nebulaBlade() {
+  static uint16_t timebase = 0;
+  static uint8_t hueShift = 0;
 
+  // Soft global brightness pulse (like breathing)
+  uint8_t pulse = beatsin8(3, 100, 255); // 3 bpm swell, brightness from 100–255
+
+  for (uint16_t i = 0; i < NUM_LEDS; i++) {
+    // Each LED has a slight hue offset from the base
+    uint8_t hue = hueShift + sin8(i * 5 + timebase / 2);
+    CRGB color = CHSV(hue, 200, pulse);
+
+    // Occasional star twinkle layer
+    if (random8() < 2) {
+      color += CRGB(20, 20, 20); // subtle sparkle
+    }
+
+    leds[i] = color;
+  }
+
+  FastLED.show();
+
+  // Advance wave pattern and color shift
+  timebase += 2;
+  hueShift += 1;
+}
+
+
+void Lightsaber::nebulaDrift() {
+  const uint8_t numZones = 16;
+  static struct {
+    int center;
+    int width;
+    uint8_t hue;
+    int8_t driftSpeed;
+    uint8_t brightnessPhase;
+    int8_t brightnessDelta;
+  } zones[numZones];
+
+  static bool initialized = false;
+  if (!initialized) {
+    for (uint8_t i = 0; i < numZones; i++) {
+      zones[i].center = random(NUM_LEDS);
+      zones[i].width = random(4, 8);
+      zones[i].hue = random8();
+      zones[i].driftSpeed = random(1, 8) * (random(0, 2) ? 1 : -1);
+      zones[i].brightnessPhase = random8();
+      zones[i].brightnessDelta = random(1, 3);
+    }
+    initialized = true;
+  }
+
+  // Fade existing colors to prevent washout
+  fadeToBlackBy(leds, NUM_LEDS, 10);
+
+  for (uint8_t z = 0; z < numZones; z++) {
+    // Update drift position
+    zones[z].center += zones[z].driftSpeed;
+    if (zones[z].center < -zones[z].width) zones[z].center = NUM_LEDS + zones[z].width;
+    if (zones[z].center > NUM_LEDS + zones[z].width) zones[z].center = -zones[z].width;
+
+    // Update brightness pulse
+    zones[z].brightnessPhase += zones[z].brightnessDelta;
+    uint8_t baseBright = (sin8(zones[z].brightnessPhase) + 64) >> 1; // ~0–127
+
+    for (int i = -zones[z].width; i <= zones[z].width; i++) {
+      int pos = zones[z].center + i;
+      if (pos < 0 || pos >= NUM_LEDS) continue;
+
+      uint8_t falloff = 255 - abs(i) * (255 / zones[z].width);
+      uint8_t brightness = scale8(baseBright, falloff);
+      CRGB nebulaColor = CHSV(zones[z].hue, 150, brightness);  // Slightly desaturated
+
+      leds[pos] += nebulaColor;  // Add glow
+    }
+  }
+
+  FastLED.show();
+  delay(30);
+}
 
 
 
@@ -295,7 +437,7 @@ int Lightsaber::buttonSelect() {
       mode_sel[0] = reading;
       if (mode_sel[0] == HIGH) {
         funcSelect++;
-        if (funcSelect == 8) {
+        if (funcSelect == 10) {
           funcSelect = 0;
         }
       }
@@ -406,12 +548,14 @@ void Lightsaber::lightsaber_app() {
     switch (this->buttonSelect()) {
       case 0: this->mixColor(); break;
       case 1: this->rainbowSweep(); break;
-      case 2: this->flickeringFlame(); break;
-      case 3: this->lavaFlow(); break;
-      case 4: this->america(); break;
-      case 5: this->duelOfTheFates(); break;
-      case 6: this->duelOfTheFates2(); break;
-      case 7: this->deadSaber(); break;
+      case 2: this->nebulaBlade(); break;
+      case 3: this->nebulaDrift(); break;
+      case 4: this->flickeringFlame(); break;
+      case 5: this->lavaFlow(); break;
+      case 6: this->america(); break;
+      case 7: this->duelOfTheFates(); break;
+      case 8: this->duelOfTheFates2(); break;
+      case 9: this->deadSaber(); break;
     }
   }
 }
